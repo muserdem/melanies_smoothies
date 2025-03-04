@@ -12,16 +12,16 @@ st.write("The name on your Smoothie is:", name_on_order)
 # Fetch fruit list from Snowflake, including SEARCH_ON column
 cnx = st.connection("snowflake")
 session = cnx.session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'), col('SEARCH_ON')).collect()
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME'), col('SEARCH_ON')).collect()
 
 # Convert Snowflake result into a dictionary {Fruit Name -> Search On Value}
-fruit_dict = {row["FRUIT_NAME"]: row["SEARCH_ON"] for row in my_dataframe}
+fruit_dict = {row["FRUITNAME"]: row["SEARCH_ON"] for row in my_dataframe}
 
 # Debugging step: Display the dataframe to verify correct retrieval
 st.dataframe(data=my_dataframe, use_container_width=True)
 st.stop()  # Pause execution to inspect dataframe before continuing
 
-# Multiselect for fruit choices (users see FRUIT_NAME, but we use SEARCH_ON for API calls)
+# Multiselect for fruit choices (users see FRUITNAME, but we use SEARCH_ON for API calls)
 ingredients_list = st.multiselect("Choose your ingredients:", list(fruit_dict.keys()))
 
 # Validation: Ensure max 5 ingredients
