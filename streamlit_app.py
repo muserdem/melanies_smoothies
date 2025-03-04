@@ -13,17 +13,16 @@ st.write("The name on your Smoothie is:", name_on_order)
 # Fetch fruit list from Snowflake
 cnx = st.connection("snowflake")
 session = cnx.session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME'), col('SEARCH_ON')).collect()
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME'), col('SEARCH_ON')).to_pandas()
 
-# Convert Snowpark DataFrame to Pandas
-pd_df = pd.DataFrame(my_dataframe)
-st.dataframe(pd_df, use_container_width=True)  # Display DataFrame for debugging
-st.stop()  # Pause execution to inspect data before continuing
+# Debugging step: Show the fetched data
+st.dataframe(my_dataframe, use_container_width=True)
+st.stop()  # Pause execution to inspect data
 
-# Multiselect for user to choose fruits
-ingredients_list = st.multiselect("Choose your ingredients:", pd_df["FRUITNAME"].tolist())
+# Multiselect for choosing fruits
+ingredients_list = st.multiselect("Choose your ingredients:", my_dataframe["FRUITNAME"].tolist())
 
-# Validation: Max 5 ingredients
+# Validation: Maximum of 5 ingredients
 if len(ingredients_list) > 5:
     st.error("You can only select up to 5 ingredients! Please remove one or more.")
 
@@ -35,7 +34,7 @@ if ingredients_list:
         ingredients_string += fruit_chosen + " "
 
         # Safely retrieve the SEARCH_ON value
-        search_on = pd_df.loc[pd_df['FRUITNAME'] == fruit_chosen, 'SEARCH_ON']
+        search_on = my_dataframe.loc[my_dataframe['FRUITNAME'] == fruit_chosen, 'SEARCH_ON']
         search_on_value = search_on.iloc[0] if not search_on.empty else fruit_chosen  # Use fruit_chosen if SEARCH_ON is missing
 
         # Debugging Output
