@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import pandas as pd  
 from snowflake.snowpark.functions import col
 
 st.title("Customize Your Smoothie :cup_with_straw:")
@@ -9,48 +10,46 @@ st.write("Choose up to 5 ingredients!")
 name_on_order = st.text_input("Name on Smoothie:")
 st.write("The name on your Smoothie is:", name_on_order)
 
-# Fetch fruit list from Snowflake, including SEARCH_ON column
+# Fetch fruit list from Snowflake
 cnx = st.connection("snowflake")
 session = cnx.session()
 my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME'), col('SEARCH_ON')).collect()
 
-# Convert Snowflake result into a dictionary {Fruit Name -> Search On Value}
-fruit_dict = {row["FRUITNAME"]: row["SEARCH_ON"] for row in my_dataframe}
+# Convert Snowpark DataFrame to Pandas
+pd_df = pd.DataFrame(my_dataframe)
+st.dataframe(pd_df, use_container_width=True)
+st.stop()  # Debugging point
 
-# Debugging step: Display the dataframe to verify correct retrieval
-st.dataframe(data=my_dataframe, use_container_width=True)
-st.stop()  # Pause execution to inspect dataframe before continuing
+# Multiselect for user to choose fruits
+ingredients_list = st.multiselect("Choose your ingredients:", pd_df["FRUITNAME"].tolist())
 
-# Multiselect for fruit choices (users see FRUITNAME, but we use SEARCH_ON for API calls)
-ingredients_list = st.multiselect("Choose your ingredients:", list(fruit_dict.keys()))
-
-# Validation: Ensure max 5 ingredients
+# Validation: Max 5 ingredients
 if len(ingredients_list) > 5:
     st.error("You can only select up to 5 ingredients! Please remove one or more.")
 
-# Show nutrition info for selected fruits using SEARCH_ON values
+# Fetch nutrition info using SEARCH_ON values
 if ingredients_list:
     for fruit_chosen in ingredients_list:
-        search_term = fruit_dict[fruit_chosen]  # Lookup SEARCH_ON value
+        search_on = pd_df.loc[pd_df['FRUITNAME'] == fruit_chosen, 'SEARCH_ON']
+        search_on_value = search_on.iloc[0] if not search_on.empty else fruit_chosen  # Handle missing values
 
+        st.write(f"The search value for {fruit_chosen} is {search_on_value}.")
         st.subheader(f"{fruit_chosen} Nutrition Information")
-        response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_term}")
 
+        response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on_value}")
         if response.status_code == 200:
             sf_df = response.json()
             st.dataframe(data=sf_df, use_container_width=True)
         else:
-            st.write(f"Sorry, {fruit_chosen} ({search_term}) is not in the Fruitvice database.")
+            st.write(f"Sorry, {fruit_chosen} ({search_on_value}) is not in the Fruitvice database.")
 
-# Submit button to store order in Snowflake
+# Submit button for database insertion
 if ingredients_list and len(ingredients_list) <= 5:
     ingredients_string = ', '.join(ingredients_list)
-
     my_insert_stmt = f"""
         INSERT INTO smoothies.public.orders (ingredients, name_on_order)
         VALUES ('{ingredients_string}', '{name_on_order}')
     """
-
     if st.button('Submit Order'):
         session.sql(my_insert_stmt).collect()
         st.success(f"Your Smoothie is ordered, {name_on_order}! ✅")
