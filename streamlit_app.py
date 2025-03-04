@@ -12,16 +12,16 @@ name_on_order = st.text_input("Name on Smoothie:")
 # Fetch fruit list from Snowflake
 cnx = st.connection("snowflake")
 session = cnx.session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME'), col('SEARCH_ON')).to_pandas()
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'), col('SEARCH_ON')).to_pandas()
 
-# Replace None or NaN values in SEARCH_ON with FRUITNAME
-my_dataframe["SEARCH_ON"].fillna(my_dataframe["FRUITNAME"], inplace=True)
+# Replace None or NaN values in SEARCH_ON with FRUIT_NAME
+my_dataframe["SEARCH_ON"].fillna(my_dataframe["FRUIT_NAME"], inplace=True)
 
 # Debugging step: Show the fetched data
 st.dataframe(my_dataframe, use_container_width=True)
 
 # Ingredient selection box (MAKE SURE IT'S VISIBLE)
-ingredients_list = st.multiselect("Choose your ingredients:", my_dataframe["FRUITNAME"].tolist())
+ingredients_list = st.multiselect("Choose your ingredients:", my_dataframe["FRUIT_NAME"].tolist())
 
 # Validation: Max 5 ingredients
 if len(ingredients_list) > 5:
@@ -35,7 +35,7 @@ if ingredients_list:
         ingredients_string += fruit_chosen + " "
 
         # Safely retrieve the SEARCH_ON value
-        search_on_value = my_dataframe.loc[my_dataframe['FRUITNAME'] == fruit_chosen, 'SEARCH_ON'].values[0]
+        search_on_value = my_dataframe.loc[my_dataframe['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].values[0]
 
         # Debugging Output
         st.write(f"🔍 The search value for **{fruit_chosen}** is **{search_on_value}**.")
