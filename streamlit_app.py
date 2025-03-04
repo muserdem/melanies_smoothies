@@ -35,4 +35,4 @@ if ingredients_list and len(ingredients_list) <= 5:
 
 import requests
 smoothiefroot_response = requests.get("https://my.smoothiefroot.com/api/fruit/watermelon")
-st.text(smoothiefroot_response)
+st.text(smoothiefroot_response.json())
