@@ -17,8 +17,8 @@ my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT
 
 # Convert Snowpark DataFrame to Pandas
 pd_df = pd.DataFrame(my_dataframe)
-st.dataframe(pd_df, use_container_width=True)
-st.stop()  # Debugging point
+st.dataframe(pd_df, use_container_width=True)  # Display DataFrame for debugging
+st.stop()  # Pause execution to inspect data before continuing
 
 # Multiselect for user to choose fruits
 ingredients_list = st.multiselect("Choose your ingredients:", pd_df["FRUITNAME"].tolist())
@@ -29,19 +29,28 @@ if len(ingredients_list) > 5:
 
 # Fetch nutrition info using SEARCH_ON values
 if ingredients_list:
+    ingredients_string = ""
+
     for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + " "
+
+        # Safely retrieve the SEARCH_ON value
         search_on = pd_df.loc[pd_df['FRUITNAME'] == fruit_chosen, 'SEARCH_ON']
-        search_on_value = search_on.iloc[0] if not search_on.empty else fruit_chosen  # Handle missing values
+        search_on_value = search_on.iloc[0] if not search_on.empty else fruit_chosen  # Use fruit_chosen if SEARCH_ON is missing
 
+        # Debugging Output
         st.write(f"The search value for {fruit_chosen} is {search_on_value}.")
-        st.subheader(f"{fruit_chosen} Nutrition Information")
 
-        response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on_value}")
-        if response.status_code == 200:
-            sf_df = response.json()
-            st.dataframe(data=sf_df, use_container_width=True)
+        # Display Nutrition Information
+        st.subheader(f"{fruit_chosen} Nutrition Information")
+        
+        fruityvice_response = requests.get(f"https://fruityvice.com/api/fruit/{search_on_value}")
+        
+        if fruityvice_response.status_code == 200:
+            fv_df = fruityvice_response.json()
+            st.dataframe(data=fv_df, use_container_width=True)
         else:
-            st.write(f"Sorry, {fruit_chosen} ({search_on_value}) is not in the Fruitvice database.")
+            st.write(f"Sorry, {fruit_chosen} ({search_on_value}) is not available in the API.")
 
 # Submit button for database insertion
 if ingredients_list and len(ingredients_list) <= 5:
