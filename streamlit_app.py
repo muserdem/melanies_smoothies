@@ -8,7 +8,7 @@ st.write("Choose up to 5 ingredients!")
 name_on_order = st.text_input("Name on Smoothie:")
 st.write("The name on your Smoothie is", name_on_order)
 
-cnx = st.connection("snoxflake")
+cnx = st.connection("snowflake")
 session = cnx.session() #get_active_session()
 my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUITNAME')).collect()
 fruit_list = [row["FRUITNAME"] for row in my_dataframe]  # Extracting fruit names from Snowflake result
